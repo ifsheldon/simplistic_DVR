@@ -1,4 +1,4 @@
-# Assignment 4
+# Simplistic DVR
 Please be kindly noted that this is only compilable on Linux.
 
 ## Compilation Notes
