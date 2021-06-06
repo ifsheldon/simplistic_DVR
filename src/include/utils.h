@@ -106,11 +106,8 @@ unsigned short* loadU8Data(const char* filename, glm::u16vec3 &vol_dim) {
     fread(data, sizeof(unsigned char) * dataNum, 1, fp);
     fclose(fp);
     auto data_u16 = new unsigned short[dataNum];
-    // todo: change values based on occupancy
-    for (int i = 0; i < dataNum; i++) {
-        data_u16[i] = data[i];
-        data_u16[i] <<= 8;
-    }
+    for (int i = 0; i < dataNum; i++)
+        data_u16[i] = 0 - bool(data[i] & 0b11000000);
     delete[] data;
     return data_u16;
 }
