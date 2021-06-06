@@ -27,6 +27,7 @@ const char* FRAGMENT_CANVAS_ISO_SHADER_PATH = "../src/shaders/canvas_iso.frag";
 
 // skewed_head x: 184, y: 256, z:170
 const char* HEAD_DATA_PATH = "../data/skewed_head.dat";
+const char* DATA_U8_PATH = "../data/datau8.raw";
 
 struct FrameBuffer {
     GLuint handle;
@@ -523,7 +524,10 @@ int main(int argc, char** argv) {
 
     initPrograms();
     setUpFBO();
-    data_array = loadData(HEAD_DATA_PATH, vol_dim);
+    auto vol_dim_u8 = u16vec3(128, 128, 128);
+    auto data_u8 = loadU8Data(DATA_U8_PATH, vol_dim_u8);
+    data_array = data_u8;
+    vol_dim = vol_dim_u8;
     downloadVolumeAsTexture();
     float midVal;
     if ((vol_dim.x < vol_dim.z && vol_dim.x > vol_dim.y) || (vol_dim.x > vol_dim.z && vol_dim.x < vol_dim.y)) {

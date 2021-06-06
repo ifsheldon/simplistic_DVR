@@ -4,7 +4,10 @@
 
 #ifndef ASSIGNMENT2_UTILS_H
 #define ASSIGNMENT2_UTILS_H
+
 #include "glm/glm.hpp"
+#include <cstdio>
+
 // query GPU functionality we need for OpenGL, return false when not available
 bool queryGPUCapabilitiesOpenGL() {
     // =============================================================================
@@ -89,6 +92,27 @@ unsigned short* loadData(const char* filename, glm::u16vec3 &vol_dim) {
         data[i] <<= 4;
     }
     return data;
+}
+
+unsigned short* loadU8Data(const char* filename, glm::u16vec3 &vol_dim) {
+    fprintf(stderr, "loading data %s\n", filename);
+    FILE* fp = fopen(filename, "rb");
+    if (fp == NULL) {
+        fprintf(stderr, "Cannot open file %s for reading.\n", filename);
+        return nullptr;
+    }
+    int dataNum = vol_dim.x * vol_dim.y * vol_dim.z;
+    auto data = new unsigned char[dataNum];
+    fread(data, sizeof(unsigned char) * dataNum, 1, fp);
+    fclose(fp);
+    auto data_u16 = new unsigned short[dataNum];
+    // todo: change values based on occupancy
+    for (int i = 0; i < dataNum; i++) {
+        data_u16[i] = data[i];
+        data_u16[i] <<= 8;
+    }
+    delete[] data;
+    return data_u16;
 }
 
 #endif //ASSIGNMENT2_UTILS_H
