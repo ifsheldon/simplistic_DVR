@@ -522,7 +522,7 @@ inline bool string_to_int(string &string, int* output) {
 int main(int argc, char** argv) {
     // set glfw error callback
     glfwSetErrorCallback(glfwErrorCallback);
-    if (argc < 6) {
+    if (argc < 7) {
         printf("Needs input");
         return -1;
     }
@@ -532,16 +532,21 @@ int main(int argc, char** argv) {
     string vol_file_string(argv[3]);
     string output_num_string(argv[4]);
     string output_dir_string(argv[5]);
-    printf("%s\n", output_dir_string.c_str());
+    string output_image_dimension_string(argv[6]);
 
     int vol_dimension;
     int out_put_num;
+    int output_img_dim;
     if (!string_to_int(vol_dim_string, &vol_dimension)) {
         printf("Invalid Vol Dimension");
         return -1;
     }
     if (!string_to_int(output_num_string, &out_put_num)) {
         printf("Invalid Output Number");
+        return -1;
+    }
+    if (!string_to_int(output_image_dimension_string, &output_img_dim)) {
+        printf("Invalid Output Image Dimension");
         return -1;
     }
     // init glfw
