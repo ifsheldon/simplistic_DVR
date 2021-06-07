@@ -522,15 +522,16 @@ inline bool string_to_int(string &string, int* output) {
 int main(int argc, char** argv) {
     // set glfw error callback
     glfwSetErrorCallback(glfwErrorCallback);
-    if (argc < 5) {
+    if (argc < 6) {
         printf("Needs input");
         return -1;
     }
     srand(time(nullptr));
     string vol_dim_string(argv[1]);
-    string vol_file_string(argv[2]);
-    string output_num_string(argv[3]);
-    string output_dir_string(argv[4]);
+    string vol_name(argv[2]);
+    string vol_file_string(argv[3]);
+    string output_num_string(argv[4]);
+    string output_dir_string(argv[5]);
     printf("%s\n", output_dir_string.c_str());
 
     int vol_dimension;
@@ -628,7 +629,7 @@ int main(int argc, char** argv) {
         }
         image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
         image.mirror("y");
-        snprintf(name_buf, sizeof(name_buf), "%s/image_%.4f_%.4f.png", output_dir_string.c_str(),
+        snprintf(name_buf, sizeof(name_buf), "%s/%s_%.4f_%.4f.png", output_dir_string.c_str(), vol_name.c_str(),
                  cam_polar_coords.x,
                  cam_polar_coords.y);
         image.save(name_buf);
