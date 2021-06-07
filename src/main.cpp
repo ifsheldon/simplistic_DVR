@@ -13,11 +13,13 @@
 #include "vbocube.h"
 #include "vborectangle.h"
 #include "tf_tables.h"
+#include "CImg.h"
 
 //#define TESTING
 
 using namespace std;
 using namespace glm;
+using namespace cimg_library;
 
 const char* VERTEX_SHADER_3D_PATH = "../src/shaders/shader3d.vert";
 const char* FRAGMENT_SHADER_3D_PATH = "../src/shaders/shader3d.frag";
@@ -487,8 +489,8 @@ int main(int argc, char** argv) {
     }
 
     glfwWindowHint(GLFW_SAMPLES, 4);
-    windowWidth = 1024;
-    windowHeight = 1024;
+    windowWidth = 512;
+    windowHeight = 512;
     GLFWwindow* window;
     window = glfwCreateWindow(windowWidth, windowHeight, "simplistic DVR", nullptr, nullptr);
 
@@ -541,7 +543,7 @@ int main(int argc, char** argv) {
     objScaling = vec3(vol_dim.x / midVal, vol_dim.y / midVal, vol_dim.z / midVal);
 
     initTF0();
-    downloadTransferFunctionTexture(5);
+    downloadTransferFunctionTexture(2);
 
     cube = new VBOCube();
     rectangle = new VBORectangle();
@@ -550,13 +552,30 @@ int main(int argc, char** argv) {
     glfwSetWindowSizeCallback(window, windowResizeCallback);
     // viewport
     glViewport(0, 0, windowWidth, windowHeight);
-
+    unsigned char* pixelBuffer = new unsigned char[windowWidth * windowHeight * 3];
+    unsigned char* tempBuff = new unsigned char[windowWidth * windowHeight * 3];
+    CImg<unsigned char> image(windowWidth, windowHeight, 1, 3, 0);
+    CImgDisplay display(image, "show");
+    char name_buf[100];
     // start traversing the main loop
     // loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
         if (needRender) {
             triplePass();
             needRender = false;
+            glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer);
+            for (int i = 0, ci = 0, g_base = windowWidth * windowHeight, b_base = windowWidth * windowHeight * 2;
+                 i < windowWidth * windowHeight; i++, ci += 3) {
+                tempBuff[i] = pixelBuffer[ci];
+                tempBuff[i + g_base] = pixelBuffer[ci + 1];
+                tempBuff[i + b_base] = pixelBuffer[ci + 2];
+            }
+            image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
+            image.mirror("y");
+            display.display(image);
+            snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f_%.4f.png", rotateAngles.x, rotateAngles.y,
+                     rotateAngles.z);
+            image.save(name_buf);
         }
         // poll and process input events (keyboard, mouse, window, ...)
         glfwSwapBuffers(window);
@@ -569,6 +588,8 @@ int main(int argc, char** argv) {
     delete rectangle;
     delete faceFrameBuffer;
     delete[] data_array;
+    delete[] pixelBuffer;
+    delete[] tempBuff;
     glfwTerminate();
     return 0;
 }
