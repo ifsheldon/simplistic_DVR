@@ -1,11 +1,14 @@
 #include <iostream>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "glslprogram.h"
 #include <vector>
+#include <string>
+#include <ctime>
 #include <sstream>
 #include "utils.h"
 #include "consts.h"
@@ -505,10 +508,41 @@ void triplePass() {
     renderCanvas();
 }
 
+inline bool string_to_int(string &string, int* output) {
+    stringstream ss(string);
+    int i = 0;
+    ss >> i;
+    if (!ss) {
+        return false;
+    }
+    *output = i;
+    return true;
+}
+
 int main(int argc, char** argv) {
     // set glfw error callback
     glfwSetErrorCallback(glfwErrorCallback);
+    if (argc < 5) {
+        printf("Needs input");
+        return -1;
+    }
+    srand(time(nullptr));
+    string vol_dim_string(argv[1]);
+    string vol_file_string(argv[2]);
+    string output_num_string(argv[3]);
+    string output_dir_string(argv[4]);
+    printf("%s\n", output_dir_string.c_str());
 
+    int vol_dimension;
+    int out_put_num;
+    if (!string_to_int(vol_dim_string, &vol_dimension)) {
+        printf("Invalid Vol Dimension");
+        return -1;
+    }
+    if (!string_to_int(output_num_string, &out_put_num)) {
+        printf("Invalid Output Number");
+        return -1;
+    }
     // init glfw
     if (!glfwInit()) {
         exit(EXIT_FAILURE);
@@ -524,12 +558,6 @@ int main(int argc, char** argv) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
-    glfwSetKeyCallback(window, keyboardCallback);
-    glfwSetScrollCallback(window, scrollCallback);
-    cout << "Press (A, D), (S, W), (Q, E) to to rotate object around different axes" << endl;
-    cout << "Press R to reset rotations" << endl;
-    cout << "Press Arrow Up/Down to increase/decrease isovalue" << endl;
 
     // make context current (once is sufficient)
     glfwMakeContextCurrent(window);
@@ -552,8 +580,8 @@ int main(int argc, char** argv) {
 
     initPrograms();
     setUpFBO();
-    auto vol_dim_u8 = u16vec3(128, 128, 128);
-    auto data_u8 = loadU8Data(DATA_U8_PATH, vol_dim_u8);
+    auto vol_dim_u8 = u16vec3(vol_dimension);
+    auto data_u8 = loadU8Data(vol_file_string.c_str(), vol_dim_u8);
     data_array = data_u8;
     vol_dim = vol_dim_u8;
     downloadVolumeAsTexture();
@@ -574,8 +602,6 @@ int main(int argc, char** argv) {
     cube = new VBOCube();
     rectangle = new VBORectangle();
 
-    glfwSetWindowAspectRatio(window, windowWidth, windowHeight);
-    glfwSetWindowSizeCallback(window, windowResizeCallback);
     // viewport
     glViewport(0, 0, windowWidth, windowHeight);
     unsigned char* pixelBuffer = new unsigned char[windowWidth * windowHeight * 3];
@@ -583,29 +609,29 @@ int main(int argc, char** argv) {
     CImg<unsigned char> image(windowWidth, windowHeight, 1, 3, 0);
     CImgDisplay display(image, "show");
     char name_buf[100];
-    // start traversing the main loop
-    // loop until the user closes the window
-    while (!glfwWindowShouldClose(window)) {
-        if (needRender) {
-            triplePass();
-            needRender = false;
-            glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer);
-            for (int i = 0, ci = 0, g_base = windowWidth * windowHeight, b_base = windowWidth * windowHeight * 2;
-                 i < windowWidth * windowHeight; i++, ci += 3) {
-                tempBuff[i] = pixelBuffer[ci];
-                tempBuff[i + g_base] = pixelBuffer[ci + 1];
-                tempBuff[i + b_base] = pixelBuffer[ci + 2];
-            }
-            image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
-            image.mirror("y");
-            display.display(image);
-            snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f.png", cam_polar_coords.x, cam_polar_coords.y,
-                     rotateAngles.z);
-            image.save(name_buf);
+    for (int i = 0; i < out_put_num; i++) {
+        int phi = rand() % 179 + 1;
+        int theta = rand() % 361;
+        cam_polar_coords = vec3(phi, theta, cam_polar_coords.z);
+        cam_wc = vec3(cam_polar_coords.z * std::cos(radians(cam_polar_coords.x)) *
+                      std::sin(radians(cam_polar_coords.y)),
+                      cam_polar_coords.z * std::sin(radians(cam_polar_coords.x)) *
+                      std::sin(radians(cam_polar_coords.y)),
+                      cam_polar_coords.z * std::cos(radians(cam_polar_coords.y)));
+        triplePass();
+        glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer);
+        for (int idx = 0, ci = 0, g_base = windowWidth * windowHeight, b_base = windowWidth * windowHeight * 2;
+             idx < windowWidth * windowHeight; idx++, ci += 3) {
+            tempBuff[idx] = pixelBuffer[ci];
+            tempBuff[idx + g_base] = pixelBuffer[ci + 1];
+            tempBuff[idx + b_base] = pixelBuffer[ci + 2];
         }
-        // poll and process input events (keyboard, mouse, window, ...)
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
+        image.mirror("y");
+        snprintf(name_buf, sizeof(name_buf), "%s/image_%.4f_%.4f.png", output_dir_string.c_str(),
+                 cam_polar_coords.x,
+                 cam_polar_coords.y);
+        image.save(name_buf);
     }
     delete program3d;
     delete dvrProgram;
