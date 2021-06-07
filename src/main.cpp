@@ -555,8 +555,8 @@ int main(int argc, char** argv) {
     }
 
     glfwWindowHint(GLFW_SAMPLES, 4);
-    windowWidth = 512;
-    windowHeight = 512;
+    windowWidth = output_img_dim;
+    windowHeight = output_img_dim;
     GLFWwindow* window;
     window = glfwCreateWindow(windowWidth, windowHeight, "simplistic DVR", nullptr, nullptr);
 
