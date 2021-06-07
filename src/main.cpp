@@ -49,6 +49,8 @@ auto cam_up_wc = vec3(0.0, 0.0, 1.0);
 auto cam_center_wc = vec3(0.0, 0.0, 0.0);
 auto objScaling = vec3(1.0);
 vec3 rotateAngles = vec3(0.0f, 0.0f, 0.0f);
+vec3 cam_polar_coords = vec3(-90.0, 68.15f,
+                             2.7f); // phi (z-xy angle) (0-180), theta(x-y angle) [0-360], radius (degrees)
 
 GLSLProgram* program3d;
 GLSLProgram* dvrProgram;
@@ -278,6 +280,30 @@ static void keyboardCallback(GLFWwindow* window, int key, int scancode, int acti
                 updateTF0();
                 needRender = true;
                 fprintf(stderr, "lower window boundary increased to: %d\n", tf_win_max);
+                break;
+            case GLFW_KEY_G: {
+                float tmpPhi = cam_polar_coords.x + 5.0f;
+                if (int(tmpPhi) % 180 == 0)
+                    tmpPhi += 3.3f;
+                cam_polar_coords.x = tmpPhi;
+                printf("?1");
+                cam_wc = vec3(cam_polar_coords.z * std::cos(radians(cam_polar_coords.x)) *
+                              std::sin(radians(cam_polar_coords.y)),
+                              cam_polar_coords.z * std::sin(radians(cam_polar_coords.x)) *
+                              std::sin(radians(cam_polar_coords.y)),
+                              cam_polar_coords.z * std::cos(radians(cam_polar_coords.y)));
+                needRender = true;
+            }
+                break;
+            case GLFW_KEY_H:
+                cam_polar_coords.y += 5.0f;
+                printf("?0");
+                cam_wc = vec3(cam_polar_coords.z * std::cos(radians(cam_polar_coords.x)) *
+                              std::sin(radians(cam_polar_coords.y)),
+                              cam_polar_coords.z * std::sin(radians(cam_polar_coords.x)) *
+                              std::sin(radians(cam_polar_coords.y)),
+                              cam_polar_coords.z * std::cos(radians(cam_polar_coords.y)));
+                needRender = true;
                 break;
             case GLFW_KEY_K:
                 tf_win_max = std::max(tf_win_max - 1, tf_win_min);
@@ -573,7 +599,7 @@ int main(int argc, char** argv) {
             image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
             image.mirror("y");
             display.display(image);
-            snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f_%.4f.png", rotateAngles.x, rotateAngles.y,
+            snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f.png", cam_polar_coords.x, cam_polar_coords.y,
                      rotateAngles.z);
             image.save(name_buf);
         }
