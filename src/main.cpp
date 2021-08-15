@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
         image.resize(512, 512, -100, -100, 3);
         display.display(image);
         snprintf(name_buf, sizeof(name_buf),
-                 "image_%.4f_%.4f_%.4f.png",
+                 "head_%.4f_%.4f_%.4f.png",
                  rotateAngles_deg.x, rotateAngles_deg.y, rotateAngles_deg.z);
         image.save(name_buf);
         // poll and process input events (keyboard, mouse, window, ...)
