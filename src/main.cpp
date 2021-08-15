@@ -1,11 +1,14 @@
 #include <iostream>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "glslprogram.h"
 #include <vector>
+#include <string>
+#include <ctime>
 #include <sstream>
 #include "utils.h"
 #include "consts.h"
@@ -58,32 +61,16 @@ GLSLProgram* isoProgram;
 VBOCube* cube = nullptr;
 VBORectangle* rectangle = nullptr;
 
-bool enableIsoRendering = false;
 bool enableShading = true;
-bool enableMIP = false;
 float stepSize = 0.0025;
 GLuint tex3D;
 GLuint tf_texture;
 
-int tf_win_min;
-int tf_win_max;
-
-bool needRender = true;
-
 unsigned short* data_array;
 u16vec3 vol_dim;
 
-float isovalue = 0.5;
-float isovalue_increment = 0.005;
-
 int windowWidth;
 int windowHeight;
-
-static void windowResizeCallback(GLFWwindow* window, int newWidth, int newHeight) {
-    windowWidth = newWidth;
-    windowHeight = newHeight;
-    needRender = true;
-}
 
 inline void initPrograms() {
     program3d = new GLSLProgram();
@@ -197,174 +184,6 @@ void downloadTransferFunctionTexture(int tf_id) {
     glDisable(GL_TEXTURE_1D);
 }
 
-/*
- * update tf based on defined window
- */
-void updateTF0() {
-
-    // =============================================================
-    // update custom transferfunction tf0 here
-    // =============================================================
-
-    for (int i = 0, tf_idx = 0; i < tf_win_min; i++, tf_idx += 4) {
-        tf0[tf_idx + 0] = 0.0f;
-        tf0[tf_idx + 1] = 0.0f;
-        tf0[tf_idx + 2] = 0.0f;
-        tf0[tf_idx + 3] = 0.0f;
-    }
-
-    float len = tf_win_max - tf_win_min;
-    for (int i = 0, idx = tf_win_min, tf_idx = tf_win_min * 4; idx < tf_win_max; i++, idx++, tf_idx += 4) {
-        tf0[tf_idx + 0] = (float) (i) / len;
-        tf0[tf_idx + 1] = (float) (i) / len;
-        tf0[tf_idx + 2] = (float) (i) / len;
-        tf0[tf_idx + 3] = (float) (i) / len;
-    }
-
-    for (int i = tf_win_max, tf_idx = tf_win_max * 4; i < 128; i++, tf_idx += 4) {
-        tf0[tf_idx + 0] = 1.0f;
-        tf0[tf_idx + 1] = 1.0f;
-        tf0[tf_idx + 2] = 1.0f;
-        tf0[tf_idx + 3] = 1.0f;
-    }
-
-    downloadTransferFunctionTexture(0);
-}
-
-static void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        switch (key) {
-            case GLFW_KEY_A:
-                rotateAngles.y -= radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_D:
-                rotateAngles.y += radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_W:
-                rotateAngles.x += radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_S:
-                rotateAngles.x -= radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_Q:
-                rotateAngles.z += radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_E:
-                rotateAngles.z -= radians(5.f);
-                needRender = true;
-                break;
-            case GLFW_KEY_R:
-                rotateAngles = vec3(0.0);
-                needRender = true;
-                break;
-            case GLFW_KEY_U:
-                tf_win_min = std::min(tf_win_min + 1, tf_win_max);
-                updateTF0();
-                needRender = true;
-                fprintf(stderr, "lower window boundary increased to: %d\n", tf_win_min);
-                break;
-            case GLFW_KEY_J:
-                tf_win_min = std::max(tf_win_min - 1, 0);
-                updateTF0();
-                needRender = true;
-                fprintf(stderr, "lower window boundary decreased to: %d\n", tf_win_min);
-                break;
-            case GLFW_KEY_I:
-                tf_win_max = std::min(tf_win_max + 1, 127);
-                updateTF0();
-                needRender = true;
-                fprintf(stderr, "lower window boundary increased to: %d\n", tf_win_max);
-                break;
-            case GLFW_KEY_K:
-                tf_win_max = std::max(tf_win_max - 1, tf_win_min);
-                updateTF0();
-                needRender = true;
-                fprintf(stderr, "lower window boundary decreased to: %d\n", tf_win_max);
-                break;
-            case GLFW_KEY_5:
-                downloadTransferFunctionTexture(0);
-                cout << "Loaded Transfer Function 0" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_6:
-                downloadTransferFunctionTexture(1);
-                cout << "Loaded Transfer Function 1" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_7:
-                downloadTransferFunctionTexture(2);
-                cout << "Loaded Transfer Function 2" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_8:
-                downloadTransferFunctionTexture(3);
-                cout << "Loaded Transfer Function 3" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_9:
-                downloadTransferFunctionTexture(4);
-                cout << "Loaded Transfer Function 4" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_0:
-                downloadTransferFunctionTexture(5);
-                cout << "Loaded Transfer Function 5" << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_V:
-                enableIsoRendering = !enableIsoRendering;
-                needRender = true;
-                cout << (enableIsoRendering ? "Enabled iso-surface rendering" : "Disabled iso-surface rendering")
-                     << endl;
-                break;
-            case GLFW_KEY_X:
-                enableShading = !enableShading;
-                needRender = true;
-                cout << (enableShading ? "Enabled shading" : "Disabled shading") << endl;
-                break;
-            case GLFW_KEY_M:
-                enableMIP = !enableMIP;
-                needRender = true;
-                cout << (enableMIP ? "Enabled MIP" : "Disabled MIP") << endl;
-                break;
-            case GLFW_KEY_UP:
-                isovalue = std::min(1.0f, isovalue_increment + isovalue);
-                cout << "Isovalue = " << isovalue << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_DOWN:
-                isovalue = std::max(0.f, isovalue - isovalue_increment);
-                cout << "Isovalue = " << isovalue << endl;
-                needRender = true;
-                break;
-            case GLFW_KEY_EQUAL:
-                stepSize *= 1.05;
-                needRender = true;
-                cout << "step size = " << stepSize << endl;
-                break;
-            case GLFW_KEY_MINUS:
-                stepSize = std::max(0.001f, 0.95f * stepSize);
-                needRender = true;
-                cout << "step size = " << stepSize << endl;
-                break;
-            case GLFW_KEY_ESCAPE:
-                needRender = true;
-                break;
-        }
-    }
-}
-
-void scrollCallback(GLFWwindow* _window, double _xoff, double yoff) {
-    double zoomDelta = yoff / 100;
-    zoomRate = std::max(0.0, zoomRate + zoomDelta);
-    needRender = true;
-}
-
 #ifdef TESTING
 
 int main() {
@@ -462,10 +281,7 @@ void render3D(bool frontFaceRendering) {
 
 void renderCanvas() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (enableIsoRendering)
-        isoProgram->use();
-    else
-        dvrProgram->use();
+    dvrProgram->use();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, faceFrameBuffer->bindFrontFaceTexHandle);
     glActiveTexture(GL_TEXTURE1);
@@ -475,17 +291,11 @@ void renderCanvas() {
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_1D, tf_texture);
     auto projectionMat = ortho(-1.0, 1.0, -1.0, 1.0);
-    if (enableIsoRendering) {
-        isoProgram->setUniform("ModelViewProjMatrix", projectionMat);
-        isoProgram->setUniform("enableShading", enableShading);
-        isoProgram->setUniform("isovalue", isovalue);
-        isoProgram->setUniform("StepSize", stepSize);
-    } else {
-        dvrProgram->setUniform("ModelViewProjMatrix", projectionMat);
-        dvrProgram->setUniform("enableShading", enableShading);
-        dvrProgram->setUniform("enableMIP", enableMIP);
-        dvrProgram->setUniform("StepSize", stepSize);
-    }
+
+    dvrProgram->setUniform("ModelViewProjMatrix", projectionMat);
+    dvrProgram->setUniform("enableShading", enableShading);
+    dvrProgram->setUniform("StepSize", stepSize);
+
     rectangle->render();
 }
 
@@ -506,6 +316,17 @@ void triplePass() {
     renderCanvas();
 }
 
+inline bool string_to_int(string &string, int* output) {
+    stringstream ss(string);
+    int i = 0;
+    ss >> i;
+    if (!ss) {
+        return false;
+    }
+    *output = i;
+    return true;
+}
+
 int main(int argc, char** argv) {
     // set glfw error callback
     glfwSetErrorCallback(glfwErrorCallback);
@@ -514,7 +335,17 @@ int main(int argc, char** argv) {
     if (!glfwInit()) {
         exit(EXIT_FAILURE);
     }
-
+    if (argc < 2) {
+        cerr << "Needs input" << endl;
+        return -1;
+    }
+    srand(time(nullptr));
+    string image_num_string(argv[1]);
+    int image_num;
+    if (!string_to_int(image_num_string, &image_num)) {
+        cerr << "Invalid input" << endl;
+        return -1;
+    }
     glfwWindowHint(GLFW_SAMPLES, 4);
     windowWidth = 1024;
     windowHeight = 1024;
@@ -525,12 +356,6 @@ int main(int argc, char** argv) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
-    glfwSetKeyCallback(window, keyboardCallback);
-    glfwSetScrollCallback(window, scrollCallback);
-    cout << "Press (A, D), (S, W), (Q, E) to to rotate object around different axes" << endl;
-    cout << "Press R to reset rotations" << endl;
-    cout << "Press Arrow Up/Down to increase/decrease isovalue" << endl;
 
     // make context current (once is sufficient)
     glfwMakeContextCurrent(window);
@@ -573,7 +398,6 @@ int main(int argc, char** argv) {
     rectangle = new VBORectangle();
 
     glfwSetWindowAspectRatio(window, windowWidth, windowHeight);
-    glfwSetWindowSizeCallback(window, windowResizeCallback);
     // viewport
     glViewport(0, 0, windowWidth, windowHeight);
     unsigned char* pixelBuffer = new unsigned char[windowWidth * windowHeight * 3];
@@ -583,26 +407,23 @@ int main(int argc, char** argv) {
     char name_buf[100];
     // start traversing the main loop
     // loop until the user closes the window
-    while (!glfwWindowShouldClose(window)) {
-        if (needRender) {
-            triplePass();
-            needRender = false;
-            glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer);
-            for (int i = 0, ci = 0, g_base = windowWidth * windowHeight, b_base = windowWidth * windowHeight * 2;
-                 i < windowWidth * windowHeight; i++, ci += 3) {
-                tempBuff[i] = pixelBuffer[ci];
-                tempBuff[i + g_base] = pixelBuffer[ci + 1];
-                tempBuff[i + b_base] = pixelBuffer[ci + 2];
-            }
-            image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
-            image.mirror("y");
-            image.resize(512, 512, -100, -100, 3);
-            display.display(image);
-            snprintf(name_buf, sizeof(name_buf),
-                     "image_%.4f_%.4f_%.4f.png",
-                     rotateAngles_deg.x, rotateAngles_deg.y, rotateAngles_deg.z);
-            image.save(name_buf);
+    for (int i = 0; i < image_num; i++) {
+        triplePass();
+        glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixelBuffer);
+        for (int i = 0, ci = 0, g_base = windowWidth * windowHeight, b_base = windowWidth * windowHeight * 2;
+             i < windowWidth * windowHeight; i++, ci += 3) {
+            tempBuff[i] = pixelBuffer[ci];
+            tempBuff[i + g_base] = pixelBuffer[ci + 1];
+            tempBuff[i + b_base] = pixelBuffer[ci + 2];
         }
+        image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
+        image.mirror("y");
+        image.resize(512, 512, -100, -100, 3);
+        display.display(image);
+        snprintf(name_buf, sizeof(name_buf),
+                 "image_%.4f_%.4f_%.4f.png",
+                 rotateAngles_deg.x, rotateAngles_deg.y, rotateAngles_deg.z);
+        image.save(name_buf);
         // poll and process input events (keyboard, mouse, window, ...)
         glfwSwapBuffers(window);
         glfwPollEvents();
