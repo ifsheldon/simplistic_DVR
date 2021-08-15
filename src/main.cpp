@@ -594,6 +594,7 @@ int main(int argc, char** argv) {
             }
             image.assign(tempBuff, windowWidth, windowHeight, 1, 3);
             image.mirror("y");
+            image.resize(512, 512, -100, -100, 3);
             display.display(image);
             snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f_%.4f.png", rotateAngles.x, rotateAngles.y,
                      rotateAngles.z);
