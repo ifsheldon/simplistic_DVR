@@ -49,6 +49,7 @@ auto cam_up_wc = vec3(0.0, 0.0, 1.0);
 auto cam_center_wc = vec3(0.0, 0.0, 0.0);
 auto objScaling = vec3(1.0);
 vec3 rotateAngles = vec3(0.0f, 0.0f, 0.0f);
+vec3 rotateAngles_deg = vec3(0.0f, 0.0f, 0.0f);
 
 GLSLProgram* program3d;
 GLSLProgram* dvrProgram;
@@ -421,13 +422,14 @@ void setUpFBO() {
 
 }
 
-vec3 rand_rotation() {
+void rand_rotation() {
     static std::default_random_engine generator;
     static std::uniform_real_distribution<float> uniform_distribution;
     auto rotate_angles = vec3(uniform_distribution(generator) * 360.f,
                               uniform_distribution(generator) * 360.f,
                               uniform_distribution(generator) * 360.f);
     rotateAngles = radians(rotate_angles);
+    rotateAngles_deg = rotate_angles;
 }
 
 void render3D(bool frontFaceRendering) {
@@ -596,8 +598,9 @@ int main(int argc, char** argv) {
             image.mirror("y");
             image.resize(512, 512, -100, -100, 3);
             display.display(image);
-            snprintf(name_buf, sizeof(name_buf), "image_%.4f_%.4f_%.4f.png", rotateAngles.x, rotateAngles.y,
-                     rotateAngles.z);
+            snprintf(name_buf, sizeof(name_buf),
+                     "image_%.4f_%.4f_%.4f.png",
+                     rotateAngles_deg.x, rotateAngles_deg.y, rotateAngles_deg.z);
             image.save(name_buf);
         }
         // poll and process input events (keyboard, mouse, window, ...)
