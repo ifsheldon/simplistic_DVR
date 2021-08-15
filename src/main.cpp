@@ -13,6 +13,7 @@
 #include "vbocube.h"
 #include "vborectangle.h"
 #include "tf_tables.h"
+#include <random>
 
 //#define TESTING
 
@@ -40,7 +41,7 @@ const unsigned int FRAME_BUFFER_HEIGHT = 1024;
 
 FrameBuffer* faceFrameBuffer = nullptr;
 // rendering parameters
-auto cam_wc = vec3(0.0, -2.5, 1.0);
+auto cam_wc = vec3(0.0, -2.5, 0.0);
 float zoomRate = 1.0f;
 auto cam_up_wc = vec3(0.0, 0.0, 1.0);
 auto cam_center_wc = vec3(0.0, 0.0, 0.0);
@@ -348,6 +349,9 @@ static void keyboardCallback(GLFWwindow* window, int key, int scancode, int acti
                 needRender = true;
                 cout << "step size = " << stepSize << endl;
                 break;
+            case GLFW_KEY_ESCAPE:
+                needRender = true;
+                break;
         }
     }
 }
@@ -359,6 +363,18 @@ void scrollCallback(GLFWwindow* _window, double _xoff, double yoff) {
 }
 
 #ifdef TESTING
+
+int main() {
+    auto rotate_angles = vec3(129.8719, 65.3027, 300.3911);
+    rotate_angles = radians(rotate_angles);
+    auto rotate_mat = mat4(1.0);
+    rotate_mat = rotate(rotate_mat, rotate_angles.x, vec3(1.0, 0.0, 0.0));
+    rotate_mat = rotate(rotate_mat, rotate_angles.y, vec3(0.0, 1.0, 0.0));
+    rotate_mat = rotate(rotate_mat, rotate_angles.z, vec3(0.0, 0.0, 1.0));
+    auto v = rotate_mat * vec4(1.1, 1.5, 1.3, 1.0);
+    printf("%.4f, %.4f, %.4f, %.4f", v.x, v.y, v.z, v.w);
+}
+
 #else
 
 void setUpFBO() {
@@ -403,6 +419,14 @@ void setUpFBO() {
 
 }
 
+vec3 rand_rotation() {
+    static std::default_random_engine generator;
+    static std::uniform_real_distribution<float> uniform_distribution;
+    auto rotate_angles = vec3(uniform_distribution(generator) * 360.f,
+                              uniform_distribution(generator) * 360.f,
+                              uniform_distribution(generator) * 360.f);
+    rotateAngles = radians(rotate_angles);
+}
 
 void render3D(bool frontFaceRendering) {
     if (frontFaceRendering) {
@@ -418,13 +442,15 @@ void render3D(bool frontFaceRendering) {
     vec3 cam_pos_wc = cam_wc * zoomRate;
     auto projectionMat = perspective(radians(45.0f), 1.0f, 0.1f, 100.0f);
 
-    auto viewMat = lookAt(cam_pos_wc, cam_center_wc, cam_up_wc);
-    auto modelMat = scale(mat4(1.0f), objScaling);
+    auto modelMat = mat4(1.0f);
     modelMat = rotate(modelMat, rotateAngles.x, vec3(1.0, 0.0, 0.0));
     modelMat = rotate(modelMat, rotateAngles.y, vec3(0.0, 1.0, 0.0));
     modelMat = rotate(modelMat, rotateAngles.z, vec3(0.0, 0.0, 1.0));
+    auto scale_mat = scale(mat4(1.0), objScaling);
+    auto inverse_rotate_mat = inverse(mat3(modelMat));
+    auto viewMat = lookAt(inverse_rotate_mat * cam_pos_wc, cam_center_wc, cam_up_wc);
 
-    auto modelViewProjectionMat = projectionMat * viewMat * modelMat;
+    auto modelViewProjectionMat = projectionMat * viewMat * scale_mat;
 
     program3d->setUniform("ModelViewProjMatrix", modelViewProjectionMat);
     cube->render();
@@ -461,7 +487,7 @@ void renderCanvas() {
 
 void triplePass() {
     glBindFramebuffer(GL_FRAMEBUFFER, faceFrameBuffer->handle);
-
+    rand_rotation();
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
     render3D(true);
