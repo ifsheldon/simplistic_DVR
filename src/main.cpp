@@ -242,7 +242,7 @@ void setUpFBO() {
 }
 
 void rand_rotation() {
-    static std::default_random_engine generator;
+    static std::default_random_engine generator(time(nullptr));
     static std::uniform_real_distribution<float> uniform_distribution;
     auto rotate_angles = vec3(uniform_distribution(generator) * 360.f,
                               uniform_distribution(generator) * 360.f,
@@ -339,7 +339,6 @@ int main(int argc, char** argv) {
         cerr << "Needs input" << endl;
         return -1;
     }
-    srand(time(nullptr));
     string image_num_string(argv[1]);
     int image_num;
     if (!string_to_int(image_num_string, &image_num)) {
